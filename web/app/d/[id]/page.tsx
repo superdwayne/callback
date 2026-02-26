@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import type { CallbackEndpoint, CapturedRequest } from "@/lib/types";
+import { saveSession } from "@/lib/sessions";
 import RequestRow from "@/components/RequestRow";
 
 function relativeTime(timestamp: number): string {
@@ -51,21 +52,24 @@ export default function DashboardPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [endpointRes, requestsRes] = await Promise.all([
-          fetch(`/api/requests/${id}`),
-          fetch(`/api/requests/${id}`),
-        ]);
+        const res = await fetch(`/api/requests/${id}`);
 
-        if (!endpointRes.ok) {
+        if (!res.ok) {
           setError("Endpoint not found or has expired.");
           setLoading(false);
           return;
         }
 
-        const data = await endpointRes.json();
+        const data = await res.json();
 
         if (data.endpoint) {
           setEndpoint(data.endpoint);
+          saveSession({
+            id: data.endpoint.id,
+            url: data.endpoint.url,
+            createdAt: data.endpoint.createdAt,
+            expiresAt: data.endpoint.expiresAt,
+          });
         }
         if (data.requests) {
           setRequests(data.requests);
@@ -107,7 +111,6 @@ export default function DashboardPage() {
 
     es.onerror = () => {
       es.close();
-      // Reconnect after a short delay
       setTimeout(() => {
         connectSSE();
       }, 3000);
@@ -142,29 +145,25 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto px-4 py-24 text-center">
-        <div className="inline-flex items-center gap-2 text-zinc-400">
-          <svg
-            className="animate-spin h-5 w-5"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          Loading endpoint...
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        {/* Skeleton: URL section */}
+        <div className="mb-8">
+          <div className="h-3 w-32 bg-zinc-800 rounded mb-3" />
+          <div className="flex items-stretch gap-2">
+            <div className="flex-1 h-11 bg-zinc-800 rounded-lg" />
+            <div className="w-16 h-11 bg-zinc-800 rounded-lg" />
+          </div>
+        </div>
+        {/* Skeleton: Endpoint info */}
+        <div className="mb-8 flex gap-6">
+          <div className="h-4 w-36 bg-zinc-800 rounded" />
+          <div className="h-4 w-28 bg-zinc-800 rounded" />
+          <div className="h-4 w-24 bg-zinc-800 rounded" />
+        </div>
+        {/* Skeleton: Request list */}
+        <div className="mb-8">
+          <div className="h-3 w-36 bg-zinc-800 rounded mb-4" />
+          <div className="border border-zinc-800 rounded-xl p-12" />
         </div>
       </div>
     );
@@ -188,7 +187,7 @@ export default function DashboardPage() {
     <div className="max-w-5xl mx-auto px-4 py-8">
       {/* URL section */}
       <section className="mb-8">
-        <label className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+        <label className="block text-xs font-semibold text-zinc-400 uppercase mb-2">
           Your Callback URL
         </label>
         <div className="flex items-stretch gap-2">
@@ -213,35 +212,35 @@ export default function DashboardPage() {
         <section className="mb-8 flex flex-wrap gap-6 text-sm text-zinc-400">
           <div>
             <span className="text-zinc-500">Created: </span>
-            <span className="text-zinc-300">{formatDate(endpoint.createdAt)}</span>
+            <span className="text-zinc-300 tabular-nums">{formatDate(endpoint.createdAt)}</span>
           </div>
           <div>
             <span className="text-zinc-500">Expires in: </span>
-            <span className="text-zinc-300">{timeUntil(endpoint.expiresAt)}</span>
+            <span className="text-zinc-300 tabular-nums">{timeUntil(endpoint.expiresAt)}</span>
           </div>
           <div>
             <span className="text-zinc-500">Requests: </span>
-            <span className="text-zinc-300">{endpoint.requestCount} / 100</span>
+            <span className="text-zinc-300 tabular-nums">{endpoint.requestCount} / 100</span>
           </div>
         </section>
       )}
 
       {/* Request list */}
       <section className="mb-8">
-        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-4">
+        <h2 className="text-sm font-semibold text-zinc-400 uppercase mb-4">
           Incoming Requests
         </h2>
 
         {requests.length === 0 ? (
           <div className="border border-zinc-800 rounded-xl p-12 text-center">
             <div className="inline-flex items-center gap-2 text-zinc-500">
-              <span className="relative flex h-3 w-3">
+              <span className="relative flex size-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                <span className="relative inline-flex rounded-full size-3 bg-emerald-500" />
               </span>
               Waiting for requests...
             </div>
-            <p className="text-xs text-zinc-600 mt-3">
+            <p className="text-pretty text-xs text-zinc-600 mt-3">
               Send a request to the URL above and it will appear here in
               real-time.
             </p>
@@ -264,10 +263,10 @@ export default function DashboardPage() {
 
       {/* How to test */}
       <section className="border border-zinc-800 rounded-xl p-6 bg-zinc-900/30">
-        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">
+        <h3 className="text-sm font-semibold text-zinc-400 uppercase mb-3">
           How to test
         </h3>
-        <p className="text-sm text-zinc-500 mb-3">
+        <p className="text-pretty text-sm text-zinc-500 mb-3">
           Send a request using curl, Postman, or any HTTP client:
         </p>
         <div className="bg-zinc-950 rounded-lg border border-zinc-800 p-4 overflow-x-auto">

@@ -1,6 +1,7 @@
 "use client";
 
 import type { CapturedRequest } from "@/lib/types";
+import { cn } from "@/lib/cn";
 
 const METHOD_COLORS: Record<string, string> = {
   GET: "bg-emerald-900/60 text-emerald-300 border-emerald-800",
@@ -66,7 +67,10 @@ export default function RequestRow({
         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-zinc-800/50 transition-colors"
       >
         <span
-          className={`inline-flex items-center justify-center px-2 py-0.5 text-xs font-mono font-semibold rounded border ${getMethodColor(request.method)}`}
+          className={cn(
+            "inline-flex items-center justify-center px-2 py-0.5 text-xs font-mono font-semibold rounded border",
+            getMethodColor(request.method)
+          )}
         >
           {request.method}
         </span>
@@ -78,11 +82,11 @@ export default function RequestRow({
             {truncate(request.body, 80)}
           </span>
         )}
-        <span className="text-xs text-zinc-500 whitespace-nowrap">
+        <span className="text-xs tabular-nums text-zinc-500 whitespace-nowrap">
           {relativeTime(request.timestamp)}
         </span>
         <svg
-          className={`w-4 h-4 text-zinc-500 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+          className={cn("size-4 text-zinc-500 transition-transform", isExpanded && "rotate-180")}
           fill="none"
           viewBox="0 0 24 24"
           strokeWidth={2}
@@ -113,13 +117,13 @@ export default function RequestRow({
             )}
             <span>
               Size:{" "}
-              <span className="font-mono text-zinc-400">
+              <span className="font-mono tabular-nums text-zinc-400">
                 {request.size} bytes
               </span>
             </span>
             <span>
               Time:{" "}
-              <span className="font-mono text-zinc-400">
+              <span className="font-mono tabular-nums text-zinc-400">
                 {new Date(request.timestamp).toISOString()}
               </span>
             </span>
@@ -128,7 +132,7 @@ export default function RequestRow({
           {/* Query params */}
           {queryEntries.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+              <h4 className="text-xs font-semibold text-zinc-400 uppercase mb-2">
                 Query Parameters
               </h4>
               <div className="bg-zinc-950 rounded-lg border border-zinc-800 overflow-hidden">
@@ -153,7 +157,7 @@ export default function RequestRow({
           {/* Headers */}
           {headerEntries.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+              <h4 className="text-xs font-semibold text-zinc-400 uppercase mb-2">
                 Headers
               </h4>
               <div className="bg-zinc-950 rounded-lg border border-zinc-800 overflow-hidden max-h-64 overflow-y-auto">
@@ -178,7 +182,7 @@ export default function RequestRow({
           {/* Body */}
           {request.body && (
             <div>
-              <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+              <h4 className="text-xs font-semibold text-zinc-400 uppercase mb-2">
                 Body
                 {isJson && (
                   <span className="ml-2 text-emerald-500 normal-case font-normal">

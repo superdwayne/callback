@@ -1,11 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  getSessions,
+  saveSession,
+  removeSession,
+  type SavedSession,
+} from "@/lib/sessions";
+
+function timeUntil(timestamp: number): string {
+  const diff = timestamp - Date.now();
+  if (diff <= 0) return "expired";
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
 
 export default function Home() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [sessions, setSessions] = useState<SavedSession[]>([]);
+
+  useEffect(() => {
+    setSessions(getSessions());
+  }, []);
 
   async function handleCreate() {
     setLoading(true);
@@ -13,20 +34,31 @@ export default function Home() {
       const res = await fetch("/api/create", { method: "POST" });
       if (!res.ok) throw new Error("Failed to create endpoint");
       const data = await res.json();
+      saveSession({
+        id: data.id,
+        url: data.url,
+        createdAt: data.createdAt,
+        expiresAt: data.expiresAt,
+      });
       router.push(`/d/${data.id}`);
     } catch {
       setLoading(false);
     }
   }
 
+  function handleRemove(id: string) {
+    removeSession(id);
+    setSessions(getSessions());
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4">
       {/* Hero */}
       <section className="pt-24 pb-16 text-center">
-        <h1 className="text-5xl sm:text-6xl font-bold tracking-tight text-white mb-6">
+        <h1 className="text-5xl sm:text-6xl font-bold text-balance text-white mb-6">
           Instant Callback URLs
         </h1>
-        <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+        <p className="text-lg sm:text-xl text-pretty text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
           Generate a live webhook URL in one click. Inspect every request
           &mdash; headers, body, timing. No signup. No install. Free.
         </p>
@@ -38,7 +70,7 @@ export default function Home() {
           {loading ? (
             <>
               <svg
-                className="animate-spin h-5 w-5"
+                className="animate-spin size-5"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -65,13 +97,66 @@ export default function Home() {
         </button>
       </section>
 
+      {/* Active Sessions */}
+      {sessions.length > 0 && (
+        <section className="pb-12">
+          <h2 className="text-sm font-semibold text-zinc-400 uppercase mb-4">
+            Your Sessions
+          </h2>
+          <div className="space-y-2">
+            {sessions.map((s) => (
+              <div
+                key={s.id}
+                className="flex items-center gap-3 border border-zinc-800 rounded-lg bg-zinc-900/50 px-4 py-3 group"
+              >
+                <span className="relative flex size-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full size-2 bg-emerald-500" />
+                </span>
+                <Link
+                  href={`/d/${s.id}`}
+                  className="flex-1 min-w-0 font-mono text-sm text-emerald-400 hover:text-emerald-300 transition-colors truncate"
+                >
+                  {s.url}
+                </Link>
+                <span className="text-xs tabular-nums text-zinc-500 whitespace-nowrap hidden sm:block">
+                  {timeUntil(s.expiresAt)} left
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleRemove(s.id);
+                  }}
+                  aria-label="Remove session"
+                  className="text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 p-1"
+                >
+                  <svg
+                    className="size-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Features */}
       <section className="pb-24">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div className="border border-zinc-800 rounded-xl p-6 bg-zinc-900/50">
-            <div className="w-10 h-10 rounded-lg bg-emerald-950 flex items-center justify-center mb-4">
+            <div className="size-10 rounded-lg bg-emerald-950 flex items-center justify-center mb-4">
               <svg
-                className="w-5 h-5 text-emerald-400"
+                className="size-5 text-emerald-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
@@ -84,19 +169,19 @@ export default function Home() {
                 />
               </svg>
             </div>
-            <h3 className="text-white font-semibold text-lg mb-2">
+            <h3 className="text-balance text-white font-semibold text-lg mb-2">
               Capture Everything
             </h3>
-            <p className="text-zinc-400 text-sm leading-relaxed">
+            <p className="text-pretty text-zinc-400 text-sm leading-relaxed">
               Headers, body, query params, timing. Every detail of every
               incoming request is captured and displayed instantly.
             </p>
           </div>
 
           <div className="border border-zinc-800 rounded-xl p-6 bg-zinc-900/50">
-            <div className="w-10 h-10 rounded-lg bg-blue-950 flex items-center justify-center mb-4">
+            <div className="size-10 rounded-lg bg-blue-950 flex items-center justify-center mb-4">
               <svg
-                className="w-5 h-5 text-blue-400"
+                className="size-5 text-blue-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
@@ -109,19 +194,19 @@ export default function Home() {
                 />
               </svg>
             </div>
-            <h3 className="text-white font-semibold text-lg mb-2">
+            <h3 className="text-balance text-white font-semibold text-lg mb-2">
               Live Stream
             </h3>
-            <p className="text-zinc-400 text-sm leading-relaxed">
+            <p className="text-pretty text-zinc-400 text-sm leading-relaxed">
               Watch requests arrive in real-time with server-sent events. No
               refreshing needed — your dashboard updates instantly.
             </p>
           </div>
 
           <div className="border border-zinc-800 rounded-xl p-6 bg-zinc-900/50">
-            <div className="w-10 h-10 rounded-lg bg-amber-950 flex items-center justify-center mb-4">
+            <div className="size-10 rounded-lg bg-amber-950 flex items-center justify-center mb-4">
               <svg
-                className="w-5 h-5 text-amber-400"
+                className="size-5 text-amber-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={1.5}
@@ -134,10 +219,10 @@ export default function Home() {
                 />
               </svg>
             </div>
-            <h3 className="text-white font-semibold text-lg mb-2">
+            <h3 className="text-balance text-white font-semibold text-lg mb-2">
               24h Retention
             </h3>
-            <p className="text-zinc-400 text-sm leading-relaxed">
+            <p className="text-pretty text-zinc-400 text-sm leading-relaxed">
               URLs automatically expire after 24 hours. Each endpoint captures
               up to 100 requests. Perfect for quick testing sessions.
             </p>
@@ -147,7 +232,7 @@ export default function Home() {
 
       {/* Footer CTA */}
       <section className="border-t border-zinc-800 py-12 text-center">
-        <p className="text-zinc-400 text-sm">
+        <p className="text-pretty text-zinc-400 text-sm">
           Need more? Install the CLI:{" "}
           <a
             href="https://www.npmjs.com/package/callbackurl"

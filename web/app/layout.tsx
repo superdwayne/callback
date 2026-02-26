@@ -18,11 +18,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-zinc-950 text-zinc-100 min-h-screen`}>
+      <body className={`${inter.className} bg-zinc-950 text-zinc-100 min-h-dvh`}>
         <header className="border-b border-zinc-800">
           <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2 group">
-              <span className="text-lg font-semibold tracking-tight text-zinc-100 group-hover:text-white transition-colors">
+              <span className="text-lg font-semibold text-zinc-100 group-hover:text-white transition-colors">
                 Callback
               </span>
               <span className="text-xs font-mono bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded">
@@ -36,7 +36,7 @@ export default function RootLayout({
               className="text-sm text-zinc-400 hover:text-zinc-100 transition-colors flex items-center gap-1.5"
             >
               <svg
-                className="w-4 h-4"
+                className="size-4"
                 fill="currentColor"
                 viewBox="0 0 24 24"
                 aria-hidden="true"
