@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Link from "next/link";
+import Script from "next/script";
+import WebMCPProvider from "@/components/WebMCPProvider";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -52,6 +54,11 @@ export default function RootLayout({
           </div>
         </header>
         <main>{children}</main>
+        <Script
+          src="https://cdn.jsdelivr.net/gh/jasonjmcghee/WebMCP@main/webmcp.js"
+          strategy="afterInteractive"
+        />
+        <WebMCPProvider />
       </body>
     </html>
   );
